@@ -7,7 +7,7 @@ def read(fname):
 setup(
   name = 'quicktracer',
   packages = ['quicktracer'],
-  version = '0.0.5',
+  version = '0.1.0',
   description = 'A simple function to do realtime tracing/monitoring/plotting',
   author = 'DomNomNom',
   author_email = 'dominikschmid93+quicktracer@gmail.com',
