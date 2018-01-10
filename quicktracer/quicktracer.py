@@ -18,15 +18,16 @@ child_process = None
 
 start_time = time.time()
 
-def trace(value):
+def trace(value, key=None):
     ''' makes a trace chart '''
     start_gui_subprocess()
-    frame = inspect.currentframe()
-    frame = inspect.getouterframes(frame)[1]
-    key = inspect.getframeinfo(frame[0]).code_context[0].strip()
-    match = re.search(r'trace\((.*)\)', key)
-    if match:
-        key = match.group(1)
+    if key is None:
+        frame = inspect.currentframe()
+        frame = inspect.getouterframes(frame)[1]
+        key = inspect.getframeinfo(frame[0]).code_context[0].strip()
+        match = re.search(r'trace\((.*)\)', key)
+        if match:
+            key = match.group(1)
 
 
     data = {
