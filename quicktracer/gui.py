@@ -6,7 +6,7 @@ import os
 import sys
 import time
 
-from tracer_constants import KEY, VALUE, TIME
+from constants import KEY, VALUE, TIME
 
 MAX_DATA_SERIES_LENGTH = 1000
 ANIMATION_UPDATE_INTERVAL = 10 # ms

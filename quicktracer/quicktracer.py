@@ -2,12 +2,13 @@ import threading
 from subprocess import Popen, PIPE, TimeoutExpired
 import math
 import time
+import os
 import sys
 import inspect
 import re
 import atexit
 
-from tracer_constants import KEY, VALUE, TIME, GUI_COMMAND
+from .constants import KEY, VALUE, TIME, GUI_COMMAND
 
 bars = None  # initialized in ensureInit
 fig = None
@@ -52,7 +53,8 @@ def start_gui_subprocess():
     global read_out
     global read_err
     if not child_process:
-        child_process = Popen(GUI_COMMAND, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        quicktracer_dir = os.path.dirname(os.path.realpath(__file__))
+        child_process = Popen(GUI_COMMAND, stdin=PIPE, stdout=PIPE, stderr=PIPE, cwd=quicktracer_dir)
         atexit.register(lambda: child_process.kill())  # behave like a daemon
         read_out = threading.Thread(target=print_file, args=[child_process.stdout], daemon=True)
         read_out.start()
@@ -60,11 +62,10 @@ def start_gui_subprocess():
         read_err.start()
 
 def main():
-    # trace some dummy data
+    # Demo: Trace some dummy data
     for i in range(2000):
         trace(30 * math.sin(i/30))
-        foo = trace
-        foo(.3 * math.sin(i/20))
+        trace(.3 * math.cos(i/20))
         time.sleep(0.002)
 
 

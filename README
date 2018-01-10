@@ -1,0 +1,13 @@
+
+# Quicktrace
+## Call trace and see what your program is up to.
+
+.. code-block:: python
+
+    # Demo: Trace some dummy data
+    import math
+    import time
+    for i in range(2000):
+        trace(30 * math.sin(i/30))
+        trace(.3 * math.cos(i/20))
+        time.sleep(0.002)
