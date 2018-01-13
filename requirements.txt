@@ -1,1 +1,1 @@
-matplotlib>=2.1.1
+pyqtgraph>=0.10.0

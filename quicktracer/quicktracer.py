@@ -1,5 +1,5 @@
 import threading
-from subprocess import Popen, PIPE, TimeoutExpired
+from subprocess import Popen, PIPE, TimeoutExpired, STARTUPINFO, STARTF_USESHOWWINDOW
 import math
 import time
 import os
@@ -7,6 +7,8 @@ import sys
 import inspect
 import re
 import atexit
+import collections
+import json
 
 from .constants import KEY, VALUE, TIME, GUI_COMMAND
 
@@ -15,11 +17,40 @@ fig = None
 ax = None
 
 child_process = None
+have_notified_about_child_dying = False
 
 start_time = time.time()
 
-def trace(value, key=None):
-    ''' makes a trace chart '''
+last_modification_times = {}  # parent source filepath -> time
+
+def trace(value, key=None, reset_on_parent_change=True):
+    '''
+        Makes a trace chart.
+
+        Arguments:
+            value:
+                The thing to trace.
+                Can be a number.
+                TODO: allow 2d vectors
+                TODO: allow 3d vectors
+            key:
+                The identifier keeping the value unique
+                Optional string
+            reset_on_parent_change:
+                whether we should restart the trace if the caller has chagned the file.
+
+     '''
+
+    if reset_on_parent_change:
+        frame = inspect.currentframe()
+        frame = inspect.getouterframes(frame)[1]
+        parent_path = inspect.getframeinfo(frame[0]).filename
+
+        new_modification_time = os.stat(parent_path).st_mtime
+        if new_modification_time != last_modification_times.get(parent_path, 0):
+            last_modification_times[parent_path] = new_modification_time
+            reset()
+
     start_gui_subprocess()
     if key is None:
         frame = inspect.currentframe()
@@ -29,24 +60,37 @@ def trace(value, key=None):
         if match:
             key = match.group(1)
 
+    # convert numpy arrays into lists
+    if isinstance(value, collections.Iterable):
+        value = list(value)
 
     data = {
         KEY: key,
         VALUE: value,
         TIME: time.time()-start_time,
     }
-    line = repr(data) + '\n'
+    line = json.dumps(data) + '\n'
     message = line.encode('utf-8')
     try:
         child_process.stdin.write(message)
         child_process.stdin.flush()
     except Exception as e:
-        raise Exception("tracer GUI died")
+        global have_notified_about_child_dying
+        if have_notified_about_child_dying:
+            return
+        have_notified_about_child_dying = True
+        raise Exception("=== quicktracer GUI died ===")
 
 
 def print_file(f):
     for line in f: print(line.decode('utf-8').rstrip())
 
+def reset():
+    global child_process
+    if child_process:
+        child_process.kill()
+        child_process = None
+        # start_gui_subprocess()
 
 def start_gui_subprocess():
     # Create a new process such that TKinter doesn't complain about not being in the main thread
@@ -55,7 +99,14 @@ def start_gui_subprocess():
     global read_err
     if not child_process:
         quicktracer_dir = os.path.dirname(os.path.realpath(__file__))
-        child_process = Popen(GUI_COMMAND, stdin=PIPE, stdout=PIPE, stderr=PIPE, cwd=quicktracer_dir)
+
+        child_process = Popen(
+            GUI_COMMAND,
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE,
+            cwd=quicktracer_dir,
+        )
         atexit.register(lambda: child_process.kill())  # behave like a daemon
         read_out = threading.Thread(target=print_file, args=[child_process.stdout], daemon=True)
         read_out.start()

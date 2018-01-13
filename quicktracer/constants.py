@@ -4,4 +4,4 @@ VALUE = 'v'
 TIME = 't'
 
 # other
-GUI_COMMAND = 'python gui.py'
+GUI_COMMAND = 'python gui_pyqtgraph.py'
