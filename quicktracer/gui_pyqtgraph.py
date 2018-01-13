@@ -35,6 +35,7 @@ class TimeseriesPlot(object):
         self.value_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.time_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.plot = None
+        self.curve = None
 
     def add_value(self, message):
         self.time_data.append(message[TIME])
@@ -54,6 +55,8 @@ class XYPlot(object):
         self.x_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.y_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.plot = None
+        self.curve = None
+        self.curve_point = None
 
     def add_value(self, message):
         vector = message[VALUE]
@@ -65,7 +68,21 @@ class XYPlot(object):
         if not self.plot:
             self.plot = win.addPlot(title=self.title, row=new_row_id(), col=0)
             self.curve = self.plot.plot()
+            self.curve.setData(self.x_data, self.y_data)
+            self.curve_point = pg.CurvePoint(self.curve)
+            self.plot.addItem(self.curve_point)
+            self.point_label = pg.TextItem('[?, ?]', anchor=(0.5, -1.0))
+            self.point_label.setParentItem(self.curve_point)
+            arrow2 = pg.ArrowItem(angle=90)
+            arrow2.setParentItem(self.curve_point)
         self.curve.setData(self.x_data, self.y_data)
+        self.curve_point.setIndex(0)  # Force a redraw if if the length doesn't change
+        index = len(self.x_data)-1
+        self.curve_point.setIndex(index)
+        self.point_label.setText('[%0.1f, %0.1f]' % (self.x_data[index], self.y_data[index]))
+
+
+
 
 
 def is_number(s):
@@ -132,8 +149,11 @@ def main():
 
     def update():
         global key_to_plot
-        for key in sorted(key_to_plot):
-            key_to_plot[key].render(win)
+        try:
+            for key in sorted(key_to_plot):
+                key_to_plot[key].render(win)
+        except Exception as e:
+            print(e)
     timer = QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(10)
