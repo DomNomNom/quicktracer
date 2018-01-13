@@ -7,7 +7,7 @@ def read(fname):
 setup(
   name = 'quicktracer',
   packages = ['quicktracer'],
-  version = '1.0.0',
+  version = '1.1.0',
   description = 'A simple function to do realtime tracing/monitoring/plotting',
   author = 'DomNomNom',
   author_email = 'dominikschmid93+quicktracer@gmail.com',
@@ -17,6 +17,8 @@ setup(
   license = "MIT",
   keywords = ['testing', 'tracing', 'plot', 'RLBot', 'quicktracer', 'realtime', 'monitoring'],
   classifiers = [],
+  install_requires = [
+    'pyqtgraph>=0.10.0',
+  ]
 )
 
-# rm -r dist && python setup.py sdist && twine upload dist\*
