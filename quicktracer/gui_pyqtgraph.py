@@ -53,15 +53,17 @@ class XYPlot(object):
         self.title = title
         self.x_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.y_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
+        self.vector_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
         self.plot = None
         self.curve = None
         self.curve_point = None
 
     def add_value(self, message):
         vector = message[VALUE]
-        assert is_vector2(vector)
+        assert is_vector(vector)
         self.x_data.append(vector[0])
         self.y_data.append(vector[1])
+        self.vector_data.append(vector)
 
     def render(self, win):
         if not self.plot:
@@ -74,11 +76,13 @@ class XYPlot(object):
             self.point_label.setParentItem(self.curve_point)
             arrow2 = pg.ArrowItem(angle=90)
             arrow2.setParentItem(self.curve_point)
+        index = min(len(self.x_data), len(self.y_data))-1
         self.curve.setData(self.x_data, self.y_data)
         self.curve_point.setIndex(0)  # Force a redraw if if the length doesn't change
-        index = len(self.x_data)-1
         self.curve_point.setIndex(index)
-        self.point_label.setText('[%0.1f, %0.1f]' % (self.x_data[index], self.y_data[index]))
+        self.point_label.setText('[{}]'.format(
+            ', '.join([ '{:0.1f}'.format(val) for val in self.vector_data[index] ])
+        ))
 
 
 
@@ -90,9 +94,9 @@ def is_number(s):
         return True
     except Exception:
         return False
-def is_vector2(vector):
+def is_vector(vector):
     try:
-        assert len(vector) == 2
+        assert len(vector) >= 2
         assert is_number(vector[0])
         assert is_number(vector[1])
         return True
@@ -126,7 +130,7 @@ def create_plot(message):
     key = message[KEY]
     value = message[VALUE]
     if is_number(value): plot = TimeseriesPlot(title=key)
-    elif is_vector2(value): plot = XYPlot(title=key)
+    elif is_vector(value): plot = XYPlot(title=key)
     else: raise Exception('unexpected datatype. key={} value={}: '.format(key, repr(value)))
     key_to_plot[key] = plot
     return plot
@@ -142,7 +146,7 @@ class NonFocusStealingGraphicsWindow(pg.GraphicsWindow):
 def main():
     app = QtGui.QApplication([])
     win = NonFocusStealingGraphicsWindow(title='quicktracer')
-    win.setGeometry(0, 50, 500, 500)
+    win.setGeometry(0, 30, 600, 600)
 
     threading.Thread(target=read_input, daemon=True).start()
 
