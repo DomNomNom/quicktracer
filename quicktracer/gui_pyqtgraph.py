@@ -6,7 +6,6 @@ GUI for quicktracer
 
 
 from pyqtgraph.Qt import QtGui, QtCore
-import numpy as np
 import pyqtgraph as pg
 from collections import deque
 import sys

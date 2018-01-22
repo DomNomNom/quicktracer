@@ -1,5 +1,5 @@
 import threading
-from subprocess import Popen, PIPE, TimeoutExpired, STARTUPINFO, STARTF_USESHOWWINDOW
+from subprocess import Popen, PIPE
 import math
 import time
 import os
@@ -119,7 +119,6 @@ def main():
         trace(30 * math.sin(i/30))
         trace(.3 * math.cos(i/20))
         time.sleep(0.002)
-
 
 if __name__ == '__main__':
     main()
