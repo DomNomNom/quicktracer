@@ -10,12 +10,16 @@ import atexit
 import collections
 import json
 
-from .constants import KEY, VALUE, TIME, GUI_COMMAND
 
-bars = None  # initialized in ensureInit
-fig = None
-ax = None
+# Protocol constants
+KEY = 'k'
+VALUE = 'v'
+TIME = 't'
+CUSTOM_DISPLAY = 'custom_display'
 
+
+
+GUI_COMMAND = 'python gui_pyqtgraph.py'
 child_process = None
 have_notified_about_child_dying = False
 
@@ -23,7 +27,7 @@ start_time = time.time()
 
 last_modification_times = {}  # parent source filepath -> time
 
-def trace(value, key=None, reset_on_parent_change=True):
+def trace(value, key=None, custom_display=None, reset_on_parent_change=True):
     '''
         Makes a trace chart.
 
@@ -36,9 +40,10 @@ def trace(value, key=None, reset_on_parent_change=True):
             key:
                 The identifier keeping the value unique
                 Optional string
+            custom_display:
+                A class inheriting from quicktracer.Display
             reset_on_parent_change:
                 whether we should restart the trace if the caller has chagned the file.
-
      '''
 
     if reset_on_parent_change:
@@ -60,8 +65,9 @@ def trace(value, key=None, reset_on_parent_change=True):
         if match:
             key = match.group(1)
 
+
     # convert numpy arrays into lists
-    if isinstance(value, collections.Iterable):
+    if isinstance(value, collections.Iterable) and not isinstance(value, str):
         value = list(value)
 
     data = {
@@ -69,6 +75,9 @@ def trace(value, key=None, reset_on_parent_change=True):
         VALUE: value,
         TIME: time.time()-start_time,
     }
+
+    if custom_display is not None:
+        data[CUSTOM_DISPLAY] = [inspect.getfile(custom_display), custom_display.__name__]
     line = json.dumps(data) + '\n'
     message = line.encode('utf-8')
     try:
@@ -112,13 +121,6 @@ def start_gui_subprocess():
         read_out.start()
         read_err = threading.Thread(target=print_file, args=[child_process.stderr], daemon=True)
         read_err.start()
-
-def main():
-    # Demo: Trace some dummy data
-    for i in range(2000):
-        trace(30 * math.sin(i/30))
-        trace(.3 * math.cos(i/20))
-        time.sleep(0.002)
 
 if __name__ == '__main__':
     main()

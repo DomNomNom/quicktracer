@@ -4,108 +4,33 @@
 GUI for quicktracer
 '''
 
-
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
-from collections import deque
 import sys
 import threading
 import json
-import os
+import traceback
 
-from constants import KEY, VALUE, TIME
+# import quicktracer
+# print(dir(quicktracer))
+# from quicktracer import KEY, VALUE, TIME, CUSTOM_DISPLAY
+from displays import default_display_classes
+# import displays
 
-MAX_DATA_SERIES_LENGTH = 1000
+
 ANIMATION_UPDATE_INTERVAL = 10 # ms
 
 # Globals
-key_to_plot = {}
+key_to_display = {}
 
-num_plots_in_window = 0
-def new_row_id():
-    global num_plots_in_window
-    num_plots_in_window += 1
-    return num_plots_in_window
-
-# TODO: inheritance maybe
-class TimeseriesPlot(object):
-    def __init__(self, title):
-        self.title = title
-        self.value_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
-        self.time_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
-        self.plot = None
-        self.curve = None
-
-    def add_value(self, message):
-        self.time_data.append(message[TIME])
-        self.value_data.append(message[VALUE])
-
-    def render(self, win):
-        if not self.plot:
-            self.plot = win.addPlot(title=self.title, row=new_row_id(), col=0)
-            self.plot.showAxis('left', False)
-            self.plot.showAxis('right', True)
-            self.curve = self.plot.plot()
-        self.curve.setData(self.time_data, self.value_data)
-
-class XYPlot(object):
-    def __init__(self, title):
-        self.title = title
-        self.x_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
-        self.y_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
-        self.vector_data = deque([], maxlen=MAX_DATA_SERIES_LENGTH)
-        self.plot = None
-        self.curve = None
-        self.curve_point = None
-
-    def add_value(self, message):
-        vector = message[VALUE]
-        assert is_vector(vector)
-        self.x_data.append(vector[0])
-        self.y_data.append(vector[1])
-        self.vector_data.append(vector)
-
-    def render(self, win):
-        if not self.plot:
-            self.plot = win.addPlot(title=self.title, row=new_row_id(), col=0)
-            self.curve = self.plot.plot()
-            self.curve.setData(self.x_data, self.y_data)
-            self.curve_point = pg.CurvePoint(self.curve)
-            self.plot.addItem(self.curve_point)
-            self.point_label = pg.TextItem('[?, ?]', anchor=(0.5, -1.0))
-            self.point_label.setParentItem(self.curve_point)
-            arrow2 = pg.ArrowItem(angle=90)
-            arrow2.setParentItem(self.curve_point)
-        index = min(len(self.x_data), len(self.y_data))-1
-        self.curve.setData(self.x_data, self.y_data)
-        self.curve_point.setIndex(0)  # Force a redraw if if the length doesn't change
-        self.curve_point.setIndex(index)
-        self.point_label.setText('[{}]'.format(
-            ', '.join([ '{:0.1f}'.format(val) for val in self.vector_data[index] ])
-        ))
-
-
-
-
-
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except Exception:
-        return False
-def is_vector(vector):
-    try:
-        assert len(vector) >= 2
-        assert is_number(vector[0])
-        assert is_number(vector[1])
-        return True
-    except Exception:
-        return False
-
+# Protocol constants
+KEY = 'k'
+VALUE = 'v'
+TIME = 't'
+CUSTOM_DISPLAY = 'custom_display'
 
 def read_input():
-    global key_to_plot
+    global key_to_display
     try:
         while True:
             try:
@@ -114,27 +39,38 @@ def read_input():
                 return
             message = json.loads(line)
             key = message[KEY]
-            if key not in key_to_plot:
-                create_plot(message)
-            key_to_plot[key].add_value(message)
+            if key not in key_to_display:
+                plot = create_plot(message)
+                plot.set_title(key)
+                plot.add_value(message)
+                key_to_display[key] = plot
+            else:
+                key_to_display[key].add_value(message)
     except Exception as e:
-        print()
-        print('ERROR:')
-        print(e)
-        print()
+        traceback.print_exc()
         sys.stdout.flush()
-        os.exit(-1)
+        sys.stderr.flush()
+        sys.exit(-1)
 
 def create_plot(message):
-    global key_to_plot
+    global key_to_display
     key = message[KEY]
     value = message[VALUE]
-    if is_number(value): plot = TimeseriesPlot(title=key)
-    elif is_vector(value): plot = XYPlot(title=key)
-    else: raise Exception('unexpected datatype. key={} value={}: '.format(key, repr(value)))
-    key_to_plot[key] = plot
-    return plot
+    custom_display = message.get(CUSTOM_DISPLAY, None)
+    if custom_display:
+        module_path, display_class_name = custom_display
+        spec = importlib.util.spec_from_file_location(display_class_name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        display_class = getattr(module, display_class_name)
+        return display_class()
+    for display_class in default_display_classes:
+        if display_class.accepts_value(value):
+            display = display_class()
+            return display
+    raise Exception('unexpected datatype. key={} value={}: '.format(key, repr(value)))
 
+import importlib.util
 
 class NonFocusStealingGraphicsWindow(pg.GraphicsWindow):
     def show(self):
@@ -151,12 +87,14 @@ def main():
     threading.Thread(target=read_input, daemon=True).start()
 
     def update():
-        global key_to_plot
+        global key_to_display
         try:
-            for key in sorted(key_to_plot):
-                key_to_plot[key].render(win)
+            for key in sorted(key_to_display):
+                key_to_display[key].render_with_init(win)
         except Exception as e:
-            print(e)
+            traceback.print_exc()
+            sys.stdout.flush()
+            sys.stderr.flush()
     timer = QtCore.QTimer()
     timer.timeout.connect(update)
     timer.start(10)

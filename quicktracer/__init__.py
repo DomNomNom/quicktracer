@@ -1,7 +1,9 @@
 # from quicktracer.constants import KEY, VALUE, TIME
 # from quicktracer.quicktracer import trace
 
-from .quicktracer import trace, reset
-from .constants import KEY, VALUE, TIME, GUI_COMMAND
+from .quicktracer_lib import trace, reset
+# from .constants import KEY, VALUE, TIME
+from .quicktracer_lib import KEY, VALUE, TIME, CUSTOM_DISPLAY
+from .displays import Display
 
-__all__ = [trace, reset, KEY, VALUE, TIME, GUI_COMMAND,]
+__all__ = [trace, reset, KEY, VALUE, TIME, CUSTOM_DISPLAY, Display]

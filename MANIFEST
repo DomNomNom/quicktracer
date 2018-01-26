@@ -3,6 +3,6 @@ README
 setup.cfg
 setup.py
 quicktracer\__init__.py
-quicktracer\constants.py
+quicktracer\displays.py
 quicktracer\gui_pyqtgraph.py
-quicktracer\quicktracer.py
+quicktracer\quicktracer_lib.py
