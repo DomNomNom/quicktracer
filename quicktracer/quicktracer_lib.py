@@ -16,8 +16,8 @@ KEY = 'k'
 VALUE = 'v'
 TIME = 't'
 CUSTOM_DISPLAY = 'custom_display'
-
-
+VIEW = 'view'
+VIEW_BOX = 'view_box'
 
 GUI_COMMAND = 'python gui_pyqtgraph.py'
 child_process = None
@@ -27,7 +27,7 @@ start_time = time.time()
 
 last_modification_times = {}  # parent source filepath -> time
 
-def trace(value, key=None, custom_display=None, reset_on_parent_change=True):
+def trace(value, key=None, custom_display=None, reset_on_parent_change=True, view_box=None):
     '''
         Makes a trace chart.
 
@@ -57,6 +57,8 @@ def trace(value, key=None, custom_display=None, reset_on_parent_change=True):
             reset()
 
     start_gui_subprocess()
+
+    # Priority: key first, then view_box
     if key is None:
         frame = inspect.currentframe()
         frame = inspect.getouterframes(frame)[1]
@@ -64,7 +66,6 @@ def trace(value, key=None, custom_display=None, reset_on_parent_change=True):
         match = re.search(r'trace\((.*)\)', key)
         if match:
             key = match.group(1)
-
 
     # convert numpy arrays into lists
     if isinstance(value, collections.Iterable) and not isinstance(value, str):
@@ -77,7 +78,9 @@ def trace(value, key=None, custom_display=None, reset_on_parent_change=True):
     }
 
     if custom_display is not None:
-        data[CUSTOM_DISPLAY] = [inspect.getfile(custom_display), custom_display.__name__]
+        data[CUSTOM_DISPLAY] = [os.path.realpath(inspect.getfile(custom_display)), custom_display.__name__]
+    if view_box is not None:
+        data[VIEW_BOX] = view_box
     line = json.dumps(data) + '\n'
     message = line.encode('utf-8')
     try:
@@ -99,7 +102,6 @@ def reset():
     if child_process:
         child_process.kill()
         child_process = None
-        # start_gui_subprocess()
 
 def start_gui_subprocess():
     # Create a new process such that TKinter doesn't complain about not being in the main thread
