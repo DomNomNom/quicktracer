@@ -7,6 +7,7 @@ GUI for quicktracer
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 import sys
+import os
 import threading
 import json
 import traceback
@@ -56,6 +57,7 @@ def create_plot(message):
     custom_display = message.get(CUSTOM_DISPLAY, None)
     if custom_display:
         module_path, display_class_name = custom_display
+        sys.path.append(os.path.dirname(module_path))
         spec = importlib.util.spec_from_file_location(display_class_name, module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
