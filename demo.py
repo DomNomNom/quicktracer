@@ -7,7 +7,8 @@ def main():
     # Demo: Trace some dummy data
     for i in range(40*60):
         # Simple and common usecase
-        trace(30 * math.sin(i/30))
+        trace(30 * math.sin(i/30), view_box="view1")
+        trace(30 * math.cos(i/30), view_box="view1")
 
         # Vectors are supported
         t = i / 100

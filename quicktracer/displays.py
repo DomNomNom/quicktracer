@@ -1,9 +1,6 @@
 from collections import deque
 import pyqtgraph as pg
 
-# from quicktracer.constants import KEY, VALUE, TIME, CUSTOM_DISPLAY
-
-
 # Protocol constants (duplicated because of import problems)
 KEY = 'k'
 VALUE = 'v'
@@ -12,11 +9,14 @@ CUSTOM_DISPLAY = 'custom_display'
 
 DEFAULT_MAX_DATA_SERIES_LENGTH = 1000
 
+view_boxes = {}
+
 class Display():
     # Override these
     def __init__(self):
         self.title = None
         self.view_area = None
+        self.view_box_id = None
     @classmethod
     def accepts_value(cls, value):
         return True
@@ -30,12 +30,24 @@ class Display():
     # Shouldn't need to override these ones
     def render_with_init(self, win):
         if not self.view_area:
-            win.nextRow()
-            self.view_area = win.addPlot(title=self.title)
+            global view_boxes
+            if self.view_box_id:
+                if self.view_box_id in view_boxes:
+                    self.view_area = view_boxes[self.view_box_id]
+                    self.view_area.setTitle('')
+                else:
+                    win.nextRow()
+                    self.view_area = win.addPlot(title=self.title)
+                    view_boxes[self.view_box_id] = self.view_area
+            else:
+                win.nextRow()
+                self.view_area = win.addPlot(title=self.title)
             self.init_view_area(self.view_area)
         self.render()
     def set_title(self, title):
         self.title = title
+    def set_view_box_id(self, view_box_id):
+        self.view_box_id = view_box_id
 
 
 # Built-in stuff below.

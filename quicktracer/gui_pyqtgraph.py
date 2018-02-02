@@ -11,12 +11,7 @@ import threading
 import json
 import traceback
 
-# import quicktracer
-# print(dir(quicktracer))
-# from quicktracer import KEY, VALUE, TIME, CUSTOM_DISPLAY
 from displays import default_display_classes
-# import displays
-
 
 ANIMATION_UPDATE_INTERVAL = 10 # ms
 
@@ -28,6 +23,7 @@ KEY = 'k'
 VALUE = 'v'
 TIME = 't'
 CUSTOM_DISPLAY = 'custom_display'
+VIEW_BOX = 'view_box'
 
 def read_input():
     global key_to_display
@@ -39,9 +35,10 @@ def read_input():
                 return
             message = json.loads(line)
             key = message[KEY]
+            view_box = message.get(VIEW_BOX, None)
             if key not in key_to_display:
                 plot = create_plot(message)
-                plot.set_title(key)
+                plot.set_view_box_id(view_box)
                 plot.add_value(message)
                 key_to_display[key] = plot
             else:
