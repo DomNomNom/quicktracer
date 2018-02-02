@@ -27,6 +27,12 @@ start_time = time.time()
 
 last_modification_times = {}  # parent source filepath -> time
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if 'ndarray' in obj.__class__.__name__:
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
 def trace(value, key=None, custom_display=None, reset_on_parent_change=True, view_box=None):
     '''
         Makes a trace chart.
@@ -78,10 +84,12 @@ def trace(value, key=None, custom_display=None, reset_on_parent_change=True, vie
     }
 
     if custom_display is not None:
-        data[CUSTOM_DISPLAY] = [os.path.realpath(inspect.getfile(custom_display)), custom_display.__name__]
+        module_path = os.path.realpath(inspect.getfile(custom_display))
+        data[CUSTOM_DISPLAY] = [module_path, custom_display.__name__]
     if view_box is not None:
         data[VIEW_BOX] = view_box
-    line = json.dumps(data) + '\n'
+    line = json.dumps(data,  cls=NumpyEncoder)
+    line += '\n'
     message = line.encode('utf-8')
     try:
         child_process.stdin.write(message)
