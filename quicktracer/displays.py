@@ -15,39 +15,39 @@ class Display():
     # Override these
     def __init__(self):
         self.title = None
-        self.view_area = None
+        self.view_box = None
         self.view_box_id = None
     @classmethod
     def accepts_value(cls, value):
         return True
     def add_value(self, message):
         pass
-    def init_view_area(self, view_area):
+    def init_view_box(self, view_box):
         pass
     def render(self):
         pass
 
     # Shouldn't need to override these ones
-    def render_with_init(self, win):
-        if not self.view_area:
-            global view_boxes
-            if self.view_box_id:
-                if self.view_box_id in view_boxes:
-                    self.view_area = view_boxes[self.view_box_id]
-                    self.view_area.setTitle('')
-                else:
-                    win.nextRow()
-                    self.view_area = win.addPlot(title=self.title)
-                    view_boxes[self.view_box_id] = self.view_area
-            else:
-                win.nextRow()
-                self.view_area = win.addPlot(title=self.title)
-            self.init_view_area(self.view_area)
-        self.render()
     def set_title(self, title):
         self.title = title
     def set_view_box_id(self, view_box_id):
         self.view_box_id = view_box_id
+    def render_with_init(self, win):
+        if not self.view_box:
+            global view_boxes
+            if self.view_box_id:
+                if self.view_box_id in view_boxes:
+                    self.view_box = view_boxes[self.view_box_id]
+                    self.view_box.setTitle(self.view_box_id)
+                else:
+                    win.nextRow()
+                    self.view_box = win.addPlot(title=self.title)
+                    view_boxes[self.view_box_id] = self.view_box
+            else:
+                win.nextRow()
+                self.view_box = win.addPlot(title=self.title)
+            self.init_view_box(self.view_box)
+        self.render()
 
 
 # Built-in stuff below.
@@ -72,12 +72,11 @@ class TimeseriesPlot(Display):
     def add_value(self, message):
         self.time_data.append(message[TIME])
         self.value_data.append(float(message[VALUE]))
-        self.title = message[KEY]
 
-    def init_view_area(self, view_area):
-        view_area.showAxis('left', False)
-        view_area.showAxis('right', True)
-        self.curve = view_area.plot()
+    def init_view_box(self, view_box):
+        view_box.showAxis('left', False)
+        view_box.showAxis('right', True)
+        self.curve = view_box.plot()
     def render(self):
         self.curve.setData(self.time_data, self.value_data)
 
@@ -96,16 +95,15 @@ class XYPlot(Display):
     def add_value(self, message):
         vector = message[VALUE]
         assert is_vector(vector)
-        self.title = message[KEY]
         self.x_data.append(vector[0])
         self.y_data.append(vector[1])
         self.vector_data.append(vector)
 
-    def init_view_area(self, view_area):
-        self.curve = view_area.plot()
+    def init_view_box(self, view_box):
+        self.curve = view_box.plot()
         self.curve.setData(self.x_data, self.y_data)
         self.curve_point = pg.CurvePoint(self.curve)
-        view_area.addItem(self.curve_point)
+        view_box.addItem(self.curve_point)
         self.point_label = pg.TextItem('[?, ?]', anchor=(0.5, -1.0))
         self.point_label.setParentItem(self.curve_point)
         arrow2 = pg.ArrowItem(angle=90)

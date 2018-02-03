@@ -11,6 +11,7 @@ import os
 import threading
 import json
 import traceback
+import importlib.util
 
 from displays import default_display_classes
 
@@ -40,6 +41,7 @@ def read_input():
             if key not in key_to_display:
                 plot = create_plot(message)
                 plot.set_view_box_id(view_box)
+                plot.set_title(view_box or key)
                 plot.add_value(message)
                 key_to_display[key] = plot
             else:
@@ -68,8 +70,6 @@ def create_plot(message):
             display = display_class()
             return display
     raise Exception('unexpected datatype. key={} value={}: '.format(key, repr(value)))
-
-import importlib.util
 
 class NonFocusStealingGraphicsWindow(pg.GraphicsWindow):
     def show(self):
