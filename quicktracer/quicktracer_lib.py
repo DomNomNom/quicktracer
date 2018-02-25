@@ -41,13 +41,14 @@ def trace(value, key=None, custom_display=None, reset_on_parent_change=True, vie
             value:
                 The thing to trace.
                 Can be a number.
-                TODO: allow 2d vectors
-                TODO: allow 3d vectors
+                Can be 2D/3D/N-D vector.
+                Can be whatever type that is supported by your @custom_display.
             key:
                 The identifier keeping the value unique
                 Optional string
             custom_display:
                 A class inheriting from quicktracer.Display
+                Used to more control the presentation of the value.
             reset_on_parent_change:
                 whether we should restart the trace if the caller has chagned the file.
      '''
