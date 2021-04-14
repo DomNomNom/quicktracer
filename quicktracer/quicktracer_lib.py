@@ -19,7 +19,7 @@ CUSTOM_DISPLAY = 'custom_display'
 VIEW = 'view'
 VIEW_BOX = 'view_box'
 
-GUI_COMMAND = 'python gui_pyqtgraph.py'
+GUI_COMMAND = ['python', 'gui_pyqtgraph.py']
 child_process = None
 have_notified_about_child_dying = False
 
